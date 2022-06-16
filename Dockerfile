@@ -2,7 +2,6 @@ FROM golang:1.18 as build
 
 ENV CGO_ENABLED 0
 ENV GOOS linux
-ENV GOPROXY https://goproxy.cn,direct
 
 WORKDIR /build/cache
 ADD go.mod .

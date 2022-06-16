@@ -2,13 +2,13 @@ package match
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
-	"sync/atomic"
-
-	"network-runtime-check/internal/rumtime"
+	"sync"
 
 	"github.com/modood/table"
+	"github.com/subscan-explorer/network-runtime-check/internal/runtime"
 )
 
 var networkNode = []string{"polkadot", "kusama", "darwinia", "acala", "acala-testnet", "alephzero", "astar",
@@ -17,14 +17,9 @@ var networkNode = []string{"polkadot", "kusama", "darwinia", "acala", "acala-tes
 	"dbc", "dock", "dolphin", "edgeware", "encointer", "equilibrium", "integritee", "interlay", "karura", "kintsugi",
 	"kulupu", "khala", "kilt-testnet", "spiritnet", "litmus", "moonbase",
 	"moonbeam", "moonriver", "nodle", "pangolin", "pangolin-parachain", "pangoro", "parallel", "parallel-heiko",
-	"picasso", "pioneer", "polkadex", "polymesh", "polymesh-testnet", "plasm", "quartz", "reef",
+	"picasso", "pioneer", "polkadex", "polymesh", "polymesh-testnet", "quartz", "reef",
 	"rococo", "sakura", "shibuya", "shiden", "sora", "subgame", "stafi", "statemine", "statemint", "turing", "uniarts",
 	"westend", "zeitgeist"}
-
-type networkPallet struct {
-	network string
-	pallet  []string
-}
 
 type Pallet struct {
 	Network string `json:"network"`
@@ -32,53 +27,66 @@ type Pallet struct {
 }
 
 func NetworkPalletMatch(ctx context.Context, pallet string) {
-	concurrency := 1
-	if rumtime.APIKey != "" {
-		concurrency = 5
-	}
-	log.Printf("concurrency: %d\n", concurrency)
-	networkCh := make(chan string, len(networkNode))
-	palletCh := make(chan networkPallet, concurrency)
-	for _, network := range networkNode {
-		networkCh <- network
-	}
-	close(networkCh)
-	closeCount := new(int64)
-
-	for i := 0; i < concurrency; i++ {
-		go func() {
-			// work 全部关闭后关闭channel
-			defer func() {
-				if atomic.AddInt64(closeCount, 1) == int64(concurrency) {
-					close(palletCh)
-				}
-			}()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case nw, ok := <-networkCh:
-					if !ok {
-						return
-					}
-					result := matchPallet(ctx, nw, pallet)
-					palletCh <- networkPallet{network: nw, pallet: result}
-				}
+	concurrency := 2
+	if runtime.APIKey != "" {
+		if c, err := runtime.APILimit(ctx); err != nil {
+			log.Printf("Failed to get apikey concurrency limit. err: %s\n", err)
+		} else {
+			if c != 0 {
+				concurrency = c
 			}
-		}()
+		}
 	}
+	log.Printf("current concurrency: %d\n", concurrency)
+	limitCh := make(chan struct{}, concurrency)
+	palletCh := make(chan Pallet, concurrency)
+	go func() {
+		wg := new(sync.WaitGroup)
+	BEGIN:
+		for _, network := range networkNode {
+			select {
+			case <-ctx.Done():
+				break BEGIN
+			case limitCh <- struct{}{}:
+			}
+			go func(nw string) {
+				wg.Add(1)
+				result := matchPallet(ctx, nw, pallet)
+				palletCh <- Pallet{Network: nw, Pallet: strings.Join(result, " | ")}
+				<-limitCh
+				wg.Done()
+			}(network)
+		}
+		close(limitCh)
+		wg.Wait()
+		close(palletCh)
+	}()
 
 	list := make([]Pallet, 0, len(networkNode))
+	statusCh := make(chan string, 5)
+	doneCh := make(chan struct{})
+	go func() {
+		for ch := range statusCh {
+			fmt.Printf("\r%s", ch)
+		}
+		fmt.Printf("\rProcessing Complete!\n")
+		close(doneCh)
+	}()
+	var doneIdx = 0
 	for p := range palletCh {
-		list = append(list, Pallet{Network: p.network, Pallet: strings.Join(p.pallet, " | ")})
+		doneIdx++
+		statusCh <- fmt.Sprintf("Processing: %d/%d", doneIdx, len(networkNode))
+		list = append(list, p)
 	}
+	close(statusCh)
+	<-doneCh
 	table.Output(list)
 }
 
 func matchPallet(ctx context.Context, network string, pallet string) []string {
-	list, err := rumtime.List(ctx, network)
+	list, err := runtime.List(ctx, network)
 	if err != nil {
-		// 把错误当做输出
+		// treat errors as output
 		if strings.Contains(err.Error(), "timeout") {
 			return []string{"timeout"}
 		}
@@ -89,11 +97,11 @@ func matchPallet(ctx context.Context, network string, pallet string) []string {
 	}
 	var modelSet = make(map[string]struct{}, len(pallet))
 	for _, model := range strings.Split(pallet, ",") {
-		modelSet[model] = struct{}{}
+		modelSet[strings.TrimSpace(strings.ToLower(model))] = struct{}{}
 	}
 	var result = make([]string, 0, len(pallet))
 	for _, model := range list {
-		if _, ok := modelSet[model]; ok {
+		if _, ok := modelSet[strings.TrimSpace(strings.ToLower(model))]; ok {
 			result = append(result, model)
 		}
 	}

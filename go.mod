@@ -1,4 +1,4 @@
-module network-runtime-check
+module github.com/subscan-explorer/network-runtime-check
 
 go 1.18
 

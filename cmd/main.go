@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"network-runtime-check/internal/match"
+	"github.com/subscan-explorer/network-runtime-check/internal/match"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 }
 
 func notify(cancel context.CancelFunc) {
-	sign := make(chan os.Signal)
+	sign := make(chan os.Signal, 1)
 	signal.Notify(sign, os.Kill, os.Interrupt, syscall.SIGTERM)
 	s := <-sign
 	log.Printf("receive signal %s, exit...\n", s.String())

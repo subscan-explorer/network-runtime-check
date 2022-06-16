@@ -1,4 +1,4 @@
-package rumtime
+package runtime
 
 import (
 	"net"
@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-const HostUrl = "https://%s.api.subscan.io/api/scan/"
+const HostURL = "https://%s.api.subscan.io/api/scan/"
 
-var HttpCli *http.Client
+var HTTPCli *http.Client
 var APIKey string
 
 func init() {
-	HttpCli = &http.Client{
+	HTTPCli = &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
 				Timeout:   time.Second * 10,

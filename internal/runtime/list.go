@@ -1,4 +1,4 @@
-package rumtime
+package runtime
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type ListResp struct {
 }
 
 func List(ctx context.Context, network string) ([]string, error) {
-	var metadataUrl = fmt.Sprintf(HostUrl, network) + "runtime/list"
+	var metadataURL = fmt.Sprintf(HostURL, network) + "runtime/list"
 	var (
 		req        *http.Request
 		rsp        *http.Response
@@ -32,7 +32,7 @@ func List(ctx context.Context, network string) ([]string, error) {
 		retryCount = 3
 		err        error
 	)
-	if req, err = http.NewRequestWithContext(ctx, http.MethodPost, metadataUrl, nil); err != nil {
+	if req, err = http.NewRequestWithContext(ctx, http.MethodPost, metadataURL, nil); err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
@@ -40,7 +40,7 @@ func List(ctx context.Context, network string) ([]string, error) {
 		req.Header.Set("X-API-Key", APIKey)
 	}
 	sendReq := func() (bool, time.Duration, error) {
-		if rsp, err = HttpCli.Do(req); err != nil {
+		if rsp, err = HTTPCli.Do(req); err != nil {
 			return true, 0, err
 		}
 		defer rsp.Body.Close()
