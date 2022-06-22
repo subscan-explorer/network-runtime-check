@@ -1,4 +1,4 @@
-package runtime
+package subscan
 
 import (
 	"context"
@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/subscan-explorer/network-runtime-check/conf"
+	"github.com/subscan-explorer/network-runtime-check/internal/api"
 )
 
 func APILimit(ctx context.Context) (int, error) {
@@ -21,11 +24,11 @@ func APILimit(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	if APIKey != "" {
-		req.Header.Set("X-API-Key", APIKey)
+	if conf.Conf.APIKey != "" {
+		req.Header.Set("X-API-Key", conf.Conf.APIKey)
 	}
 	sendReq := func() (bool, error) {
-		if rsp, err = HTTPCli.Do(req); err != nil {
+		if rsp, err = api.HTTPCli.Do(req); err != nil {
 			return true, err
 		}
 		defer rsp.Body.Close()
