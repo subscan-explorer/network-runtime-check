@@ -23,8 +23,7 @@ func main() {
 	go notify(cancel)
 	rootCmd.PersistentFlags().StringVarP(&confPath, "config", "f", "conf/config.yaml", "configuration file path")
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		c := cmd.Flag("config").Value.String()
-		conf.InitConf(c)
+		conf.InitConf(cmd.Context(), cmd.Flag("config").Value.String())
 	}
 	palletCmd := &cobra.Command{Use: "pallet", Short: "substrate pallet"}
 	palletCmd.AddCommand(cmd.NewCompare(), cmd.NewMatch())

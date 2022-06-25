@@ -1,9 +1,11 @@
 package conf
 
 import (
+	"context"
 	"log"
 	"os"
 
+	"github.com/subscan-explorer/network-runtime-check/internal/api/github/self"
 	"gopkg.in/yaml.v3"
 )
 
@@ -14,12 +16,15 @@ type Config struct {
 	APIKey  string   `yaml:"apikey"`
 }
 
-func InitConf(path string) {
-	fd, err := os.ReadFile(path)
+func InitConf(ctx context.Context, path string) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		log.Fatalf("failed to open configuration file. err: %s\n", err.Error())
+		if data, err = self.GetConfigData(ctx); err != nil {
+			log.Fatalln("failed to open configuration file.")
+			return
+		}
 	}
-	if err = yaml.Unmarshal(fd, &Conf); err != nil {
+	if err = yaml.Unmarshal(data, &Conf); err != nil {
 		log.Fatalf("failed to parse configuration file. err: %s\n", err.Error())
 	}
 }
