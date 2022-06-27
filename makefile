@@ -12,7 +12,7 @@ lint: getdeps
 check: lint
 
 build:
-	go build -o bin/runtime-check cmd/main.go
+	go build -o bin/runtime-check main.go
 
 image:
 	docker build -t runtime-check .

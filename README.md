@@ -1,46 +1,83 @@
 # network-runtime-check
 
 ### Build 
-make build  
-make image
+##### build binary
+`make build`  
+##### build docker image
+`make image`
 
 ### Running Help
 `./bin/runtime-check -h`  
 
+### Configure the configuration file
+path `conf/config.yaml`
+
+### Pallet match
 #### Shows all pallets supported by the Network Runtime
-`./bin/runtime-check`  
 
-`docker run --name runtime-check --rm runtime-check`
+`-w` query network, default all  
+`-p` matching pallet, default all  
+`-o` output to file path
 
+#### Example
+`./bin/runtime-check pallet match`  
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match`
 
 ##### output
-| Network  | Pallet             | 
-|----------|--------------------|
-| polkadot | System &#124; Scheduler &#124; ... &#124; Preimage &#124; Babe &#124; XcmPallet |
-| kusama |  System &#124; Babe &#124; ... &#124; Timestamp &#124; Indices &#124; Balances  |
-| ...      | ...                |
+| Network  | Pallet                                        | 
+|----------|-----------------------------------------------|
+| polkadot | System Scheduler ... Preimage  Babe XcmPallet |
+| kusama   | System Babe  ... Timestamp Indices Balances   |
+| ...      | ...                                           |
 
 
 #### Check if the network runtime supports a pallet
-`./bin/runtime-check -pallet=System,Babe`
+`./bin/runtime-check pallet match -p System,Babe`
 
-`docker run --name runtime-check --rm runtime-check bin/runtime-check -pallet=System,Babe`  
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match -p System,Babe`  
 
 
 ##### output
-| Network  | Pallet             | 
-|----------|--------------------|
-| polkadot | System &#124; Babe |
-| kusama   | System &#124; Babe |
-| acala    | System             |
-| darwinia | System &#124; Babe |
-| alephzero| System             |
-| altair   | System             |
-| ...      | ...                |
+| Network   | Pallet       | 
+|-----------|--------------|
+| polkadot  | System  Babe |
+| kusama    | System  Babe |
+| acala     | System       |
+| darwinia  | System  Babe |
+| alephzero | System       |
+| altair    | System       |
+| ...       | ...          |
 
 
-#### Add APIKey to speed up
-`SUBSCAN_API_KEY={{token}} ./bin/runtime-check -pallet=System,Babe`
+### Pallet compare
+#### Network comparison with substrate standard pallet
 
-`docker run --name runtime-check --rm -e SUBSCAN_API_KEY={{token}} runtime-check bin/runtime-check -pallet=System,Babe`
+`-w` query network, default all  
+`-o` output to file path
 
+#### Example
+`./bin/runtime-check pallet compare`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet compare`
+
+##### output
+|         | statemint | stafi | sora |
+|---------|-----------|-------|------|
+| System  | O         | O     | O    |
+| Utility | O         | O     | O    |
+| Babe    | X         | O     | O    | 
+| ...     | ...       | ...   | ...  |
+
+#### Example
+`./bin/runtime-check pallet compare -w stafi,sora`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet compare -w stafi,sora`
+
+##### output
+|         | stafi | sora |
+|---------|-------|------|
+| System  | O     | O    |
+| Utility | O     | O    |
+| Babe    | O     | O    | 
+| ...     | ...   |      |

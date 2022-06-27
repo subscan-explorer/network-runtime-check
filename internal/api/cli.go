@@ -1,17 +1,12 @@
-package runtime
+package api
 
 import (
 	"net"
 	"net/http"
-	"os"
-	"strings"
 	"time"
 )
 
-const HostURL = "https://%s.api.subscan.io/api/scan/"
-
 var HTTPCli *http.Client
-var APIKey string
 
 func init() {
 	HTTPCli = &http.Client{
@@ -27,5 +22,4 @@ func init() {
 			ForceAttemptHTTP2:   true,
 		},
 	}
-	APIKey = strings.TrimSpace(os.Getenv("SUBSCAN_API_KEY"))
 }
