@@ -17,7 +17,7 @@ type configResp struct {
 	Encoding string `json:"encoding"`
 }
 
-const configURL = "https://api.github.com/repos/subscan-explorer/network-runtime-check/contents/conf/config.yaml?ref=master"
+const configURL = "https://api.github.com/repos/subscan-explorer/network-runtime-check/contents/conf/config.yaml?ref=main"
 
 //const configURL = "https://api.github.com/repos/subscan-explorer/network-runtime-check/contents/conf/config.yaml?ref=feat/pallet-compare"
 
