@@ -7,7 +7,7 @@ getdeps:
 lint: getdeps
 	echo "Running $@ check"
 	${GOPATH}/bin/golangci-lint cache clean
-	${GOPATH}/bin/golangci-lint run --timeout=5m --config ./.golangci.yaml
+	${GOPATH}/bin/golangci-lint run --timeout=5m --config ./.golangci.yml
 
 check: lint
 

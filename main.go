@@ -8,12 +8,12 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/subscan-explorer/network-runtime-check/cmd"
+	"github.com/subscan-explorer/network-runtime-check/cmd/polkadot"
+	"github.com/subscan-explorer/network-runtime-check/cmd/subscan"
 	"github.com/subscan-explorer/network-runtime-check/conf"
 )
 
 func main() {
-
 	var (
 		ctx, cancel = context.WithCancel(context.Background())
 		confPath    string
@@ -25,9 +25,8 @@ func main() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		conf.InitConf(cmd.Context(), cmd.Flag("config").Value.String())
 	}
-	palletCmd := &cobra.Command{Use: "pallet", Short: "substrate pallet"}
-	palletCmd.AddCommand(cmd.NewCompare(), cmd.NewMatch())
-	rootCmd.AddCommand(palletCmd)
+
+	rootCmd.AddCommand(subscan.NewSubscanCmd(), polkadot.NewPolkadotCmd())
 	rootCmd.SetContext(ctx)
 	_ = rootCmd.Execute()
 	cancel()
