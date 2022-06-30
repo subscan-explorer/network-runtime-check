@@ -1,8 +1,9 @@
-package subscan
+package pallet
 
 import (
 	"context"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -10,18 +11,13 @@ import (
 	"github.com/subscan-explorer/network-runtime-check/internal/api/github/substrate"
 	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
 	"github.com/subscan-explorer/network-runtime-check/internal/output"
+	"github.com/subscan-explorer/network-runtime-check/internal/ws"
 )
 
-func NewSubscanCmd() *cobra.Command {
-	subscanCmd := &cobra.Command{
-		Use:   "subscan",
-		Short: "subscan metadata",
-		Long:  "Obtain metadata related data through subscan",
-	}
+func NewPalletCmd() *cobra.Command {
 	palletCmd := &cobra.Command{Use: "pallet", Short: "substrate pallet"}
 	palletCmd.AddCommand(newCompareCmd(), newMatchCmd())
-	subscanCmd.AddCommand(palletCmd)
-	return subscanCmd
+	return palletCmd
 }
 
 func newMatchCmd() *cobra.Command {
@@ -31,19 +27,29 @@ func newMatchCmd() *cobra.Command {
 		Long:  "Check subscan for all network supported pallets",
 		Run: func(cmd *cobra.Command, args []string) {
 			nw := strings.TrimSpace(cmd.Flag("network").Value.String())
-			var networkNodes []string
+			var networkName []string
+			var websocketAddr []string
 			if len(nw) == 0 {
 				// default network
-				networkNodes = conf.Conf.Network
+				networkName = conf.Conf.Network
 			} else {
-				networkNodes = strings.Split(nw, ",")
+				for _, n := range strings.Split(nw, ",") {
+					if len(n) == 0 {
+						continue
+					}
+					if strings.HasPrefix(n, "wss://") || strings.HasPrefix(n, "ws://") {
+						websocketAddr = append(websocketAddr, n)
+					} else {
+						networkName = append(networkName, n)
+					}
+				}
 			}
 			pe := strings.TrimSpace(cmd.Flag("pallet").Value.String())
 			var palletList []string
 			if len(pe) != 0 {
 				palletList = strings.Split(pe, ",")
 			}
-			palletMatch(cmd.Context(), networkNodes, palletList, cmd.Flag("output").Value.String())
+			palletMatch(cmd.Context(), networkName, websocketAddr, palletList, cmd.Flag("output").Value.String())
 		},
 	}
 	matchCmd.PersistentFlags().StringP("network", "w", "", "multiple separated by ',' \n eg: -w polkadot")
@@ -59,23 +65,33 @@ func newCompareCmd() *cobra.Command {
 		Long:  "subscan network comparison with substrate standard pallet",
 		Run: func(cmd *cobra.Command, args []string) {
 			nw := strings.TrimSpace(cmd.Flag("network").Value.String())
-			var networkNodes []string
+			var networkName []string
+			var websocketAddr []string
 			if len(nw) == 0 {
 				// default network
-				networkNodes = conf.Conf.Network
+				networkName = conf.Conf.Network
 			} else {
-				networkNodes = strings.Split(nw, ",")
+				for _, n := range strings.Split(nw, ",") {
+					if len(n) == 0 {
+						continue
+					}
+					if strings.HasPrefix(n, "wss://") || strings.HasPrefix(n, "ws://") {
+						websocketAddr = append(websocketAddr, n)
+					} else {
+						networkName = append(networkName, n)
+					}
+				}
 			}
 
-			networkComparePallet(cmd.Context(), networkNodes, cmd.Flag("output").Value.String())
+			networkComparePallet(cmd.Context(), networkName, websocketAddr, cmd.Flag("output").Value.String())
 		},
 	}
-	compareCmd.PersistentFlags().StringP("network", "w", "", "multiple separated by ',' \n eg: -w polkadot")
+	compareCmd.PersistentFlags().StringP("network", "w", "", "network name or network websocket addr,multiple separated by ',' \n eg: -w polkadot")
 	compareCmd.PersistentFlags().StringP("output", "o", "", "output to file path")
 	return compareCmd
 }
 
-func networkComparePallet(ctx context.Context, network []string, path string) {
+func networkComparePallet(ctx context.Context, networkName, websocketAddr []string, path string) {
 	pallet, err := substrate.PalletList(ctx)
 	if err != nil {
 		log.Printf("failed to get substrate standard pallet. err: %s\n", err.Error())
@@ -85,8 +101,18 @@ func networkComparePallet(ctx context.Context, network []string, path string) {
 		log.Println("get the substrate pallet is empty")
 		return
 	}
-	palletList := subscan.NetworkPalletList(ctx, network)
-
+	var palletList []subscan.NetworkPallet
+	if len(networkName) != 0 {
+		log.Printf("get subscan network pallet")
+		palletList = append(palletList, subscan.NetworkPalletList(ctx, networkName)...)
+	}
+	if len(websocketAddr) != 0 {
+		log.Printf("get websocket network pallet")
+		palletList = append(palletList, ws.NetworkPalletList(ctx, wsAddrFormat(websocketAddr))...)
+	}
+	if len(palletList) == 0 {
+		return
+	}
 	var instance output.FormatCompareCharter
 	if path != "" {
 		instance = output.NewFileOutput(path)
@@ -97,11 +123,19 @@ func networkComparePallet(ctx context.Context, network []string, path string) {
 		log.Printf("output err: %s", err.Error())
 		return
 	}
-
 }
 
-func palletMatch(ctx context.Context, network, pallet []string, path string) {
-	palletList := subscan.NetworkPalletList(ctx, network)
+func palletMatch(ctx context.Context, networkName, websocketAddr, pallet []string, path string) {
+	var palletList []subscan.NetworkPallet
+	if len(networkName) != 0 {
+		log.Printf("get subscan network pallet")
+		palletList = append(palletList, subscan.NetworkPalletList(ctx, networkName)...)
+	}
+	if len(websocketAddr) != 0 {
+		log.Printf("get websocket network pallet")
+		palletList = append(palletList, ws.NetworkPalletList(ctx, wsAddrFormat(websocketAddr))...)
+	}
+
 	if len(palletList) == 0 {
 		return
 	}
@@ -115,4 +149,18 @@ func palletMatch(ctx context.Context, network, pallet []string, path string) {
 		log.Printf("output err: %s", err.Error())
 		return
 	}
+}
+
+func wsAddrFormat(ws []string) map[string]string {
+	socketAddr := make(map[string]string)
+	for _, addr := range ws {
+		if u, err := url.Parse(addr); err == nil {
+			if len(u.Host) != 0 {
+				socketAddr[u.Host] = addr
+				continue
+			}
+		}
+		socketAddr[addr] = addr
+	}
+	return socketAddr
 }

@@ -63,6 +63,9 @@ func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet
 	}
 	fmt.Println()
 
+	if len(network) == 0 {
+		return nil
+	}
 	fmt.Println("Result list:")
 	// not enough width for output
 	width = totalWidth - utils.MaxLenArrString(pallet) - 8

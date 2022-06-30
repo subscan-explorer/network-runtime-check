@@ -6,7 +6,6 @@ import (
 	"time"
 
 	scalecodec "github.com/itering/scale.go"
-	"github.com/subscan-explorer/network-runtime-check/internal/api/github/polkaot"
 	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
@@ -17,34 +16,21 @@ type networkPallet struct {
 	Err     error
 }
 
-func NetworkPalletList(ctx context.Context) []subscan.NetworkPallet {
-	node := polkaot.NetworkList(ctx)
+func NetworkPalletList(ctx context.Context, node map[string]string) []subscan.NetworkPallet {
 	if len(node) == 0 {
 		return nil
 	}
 	palletCh := make(chan networkPallet, len(node))
 	go func() {
 		wg := new(sync.WaitGroup)
-		for name, nodeList := range node {
+		for name, addr := range node {
 			wg.Add(1)
-			go func(network string, nodeList []string) {
+			go func(network string, addr string) {
 				pallet := networkPallet{network: network}
-			BEGIN:
-				for _, n := range nodeList {
-					select {
-					case <-ctx.Done():
-						pallet.Err = ctx.Err()
-						break BEGIN
-					default:
-						pallet.codec, pallet.Err = getMetadataModules(ctx, n)
-						if pallet.Err == nil {
-							break BEGIN
-						}
-					}
-				}
+				pallet.codec, pallet.Err = getMetadataModules(ctx, addr)
 				palletCh <- pallet
 				wg.Done()
-			}(name, nodeList)
+			}(name, addr)
 		}
 		wg.Wait()
 		close(palletCh)

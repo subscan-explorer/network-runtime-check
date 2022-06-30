@@ -8,8 +8,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"github.com/subscan-explorer/network-runtime-check/cmd/polkadot"
-	"github.com/subscan-explorer/network-runtime-check/cmd/subscan"
+	"github.com/subscan-explorer/network-runtime-check/cmd/pallet"
 	"github.com/subscan-explorer/network-runtime-check/conf"
 )
 
@@ -26,7 +25,7 @@ func main() {
 		conf.InitConf(cmd.Context(), cmd.Flag("config").Value.String())
 	}
 
-	rootCmd.AddCommand(subscan.NewSubscanCmd(), polkadot.NewPolkadotCmd())
+	rootCmd.AddCommand(pallet.NewPalletCmd())
 	rootCmd.SetContext(ctx)
 	_ = rootCmd.Execute()
 	cancel()

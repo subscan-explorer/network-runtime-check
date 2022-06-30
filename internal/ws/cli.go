@@ -18,7 +18,7 @@ import (
 
 var dialer = websocket.Dialer{
 	Proxy:            http.ProxyFromEnvironment,
-	HandshakeTimeout: 5 * time.Second,
+	HandshakeTimeout: 15 * time.Second,
 }
 
 type Endpoint struct {
