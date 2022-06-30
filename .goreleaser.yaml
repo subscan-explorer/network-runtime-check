@@ -1,0 +1,42 @@
+builds:
+  -
+    # ID of the build.
+    # Defaults to the binary name.
+    id: "network-runtime-check"
+    dir: .
+    flags:
+      - -v
+
+    # Custom environment variables to be set during the builds.
+    # Default is empty.
+    env:
+      - CGO_ENABLED=0
+
+    # GOOS list to build for.
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    # Defaults are darwin and linux.
+    goos:
+      - darwin
+      - windows
+      - linux
+
+    # GOARCH to build for.
+    # For more info refer to: https://golang.org/doc/install/source#environment
+    # Defaults are 386, amd64 and arm64.
+    goarch:
+      - amd64
+      - arm64
+
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarch: 386
+      - goos: windows
+      - goarch: 386
+    # If true, skip the build.
+    # Useful for library projects.
+    # Default is false
+    skip: false
+
+
