@@ -122,7 +122,7 @@ func (s Stdout) FormatChart(pallet []string, list []subscan.NetworkPallet) error
 		fmt.Println(tb.Render("grid"))
 	}
 	fmt.Println()
-	if data := s.formatChartData(pallet, list); len(data) != 0 {
+	if data := s.formatChartData(pallet, list, width); len(data) != 0 {
 		fmt.Println("Result list:")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Pallet"})

@@ -84,10 +84,13 @@ func (f FileOutput) FormatChart(pallet []string, list []subscan.NetworkPallet) e
 		_, _ = fd.WriteString(tb.Render("grid"))
 	}
 	_, _ = fd.Write([]byte{'\n'})
-	if data := f.formatChartData(pallet, list); len(data) != 0 {
+	const maxWidth = 180
+	if data := f.formatChartData(pallet, list, maxWidth); len(data) != 0 {
 		_, _ = fd.WriteString("Result list:")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Pallet"})
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(maxWidth)
 		tb.SetAlign("left")
 		_, _ = fd.WriteString(tb.Render("grid"))
 	}

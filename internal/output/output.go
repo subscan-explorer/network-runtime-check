@@ -22,7 +22,7 @@ type FormatCharter interface {
 
 type FormatCharterBase struct{}
 
-func (FormatCharterBase) formatChartData(pallet []string, list []subscan.NetworkPallet) [][]string {
+func (FormatCharterBase) formatChartData(pallet []string, list []subscan.NetworkPallet, maxWidth int) [][]string {
 	var palletSet map[string]struct{}
 	if len(pallet) != 0 {
 		palletSet = make(map[string]struct{})
@@ -35,18 +35,45 @@ func (FormatCharterBase) formatChartData(pallet []string, list []subscan.Network
 		if np.Err != nil {
 			continue
 		}
-		var support []string
+		var support, resultPallet []string
 		support = append(support, np.Network)
 		if palletSet != nil {
-			var ps = make([]string, 0, len(pallet))
 			for _, p := range np.Pallet {
 				if _, ok := palletSet[strings.ToLower(p)]; ok {
-					ps = append(ps, p)
+					resultPallet = append(resultPallet, p)
 				}
 			}
-			support = append(support, strings.Join(ps, "  "))
 		} else {
-			support = append(support, strings.Join(np.Pallet, "  "))
+			resultPallet = np.Pallet
+		}
+		str := strings.Builder{}
+		remainWidth := maxWidth
+		for i := 0; i < len(resultPallet); {
+			sl := len(resultPallet[i])
+			if sl <= remainWidth {
+				str.WriteString(resultPallet[i])
+				remainWidth -= sl
+				if remainWidth >= 2 {
+					str.WriteString("  ")
+					remainWidth -= 2
+				} else {
+					str.WriteString(strings.Repeat(" ", remainWidth))
+					remainWidth = maxWidth // reset
+				}
+				i++
+			} else {
+				if sl >= maxWidth { // too max
+					str.Reset()
+					break
+				}
+				str.WriteString(strings.Repeat(" ", remainWidth))
+				remainWidth = maxWidth // reset
+			}
+		}
+		if str.Len() == 0 {
+			support = append(support, strings.Join(resultPallet, "  "))
+		} else {
+			support = append(support, str.String())
 		}
 		tableData = append(tableData, support)
 	}
