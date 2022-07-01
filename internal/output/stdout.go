@@ -10,28 +10,30 @@ import (
 )
 
 type Stdout struct {
+	FormatCharterBase
 }
 
 func NewStdout() *Stdout {
 	return new(Stdout)
 }
 
-func (Stdout) Output(pallet []string, list []subscan.NetworkPallet) error {
-	var table = make([][]string, len(pallet))
-	palletIdx := make(map[string]int)
+func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet) error {
+	table := make([][]string, len(pallet))
+	palletIdx := make(map[string]int, len(pallet))
+	network := make([]string, 0, len(list))
+
 	for i, p := range pallet {
 		table[i] = make([]string, len(list)+1)
 		table[i][0] = p
 		palletIdx[strings.ToLower(p)] = i
 	}
-	var network []string
-	for i, np := range list {
-		i = i + 1
-		network = append(network, np.Network)
+	i := 0
+	for _, np := range list {
 		if np.Err != nil {
-			table[0][i] = utils.ErrorReduction(np.Err)
 			continue
 		}
+		i++
+		network = append(network, np.Network)
 		for _, p := range np.Pallet {
 			if idx, ok := palletIdx[strings.ToLower(p)]; ok {
 				table[idx][i] = Exist
@@ -46,12 +48,28 @@ func (Stdout) Output(pallet []string, list []subscan.NetworkPallet) error {
 	if len(table) == 0 {
 		return nil
 	}
+	totalWidth := utils.TerminalWidth()
+	networkMaxWidth := utils.MaxLenArrString(network)
+	width := totalWidth - networkMaxWidth - 14
+	if data := s.formatChartErrData(list); len(data) != 0 {
+		fmt.Println()
+		fmt.Println("Error list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Error reason"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width)
+		fmt.Println(tb.Render("grid"))
+	}
+	fmt.Println()
 
+	if len(network) == 0 {
+		return nil
+	}
+	fmt.Println("Result list:")
 	// not enough width for output
-	width := utils.TerminalWidth() - utils.MaxLenArrString(pallet) - 8
-	maxListLen := utils.MaxLenArrString(network)
-
-	if width < 0 || maxListLen+7 > width {
+	width = totalWidth - utils.MaxLenArrString(pallet) - 8
+	if width < 0 || networkMaxWidth+6 > width {
 		tb := gotabulate.Create(table)
 		tb.SetAlign("center")
 		tb.SetEmptyString("None")
@@ -82,8 +100,35 @@ func (Stdout) Output(pallet []string, list []subscan.NetworkPallet) error {
 		tb.SetAlign("center")
 		tb.SetEmptyString("None")
 		tb.SetHeaders(network[lastIdx:idx])
-		tb.SetMaxCellSize(maxListLen)
+		tb.SetMaxCellSize(networkMaxWidth)
 		lastIdx = idx
+		fmt.Println(tb.Render("grid"))
+	}
+	return nil
+}
+
+func (s Stdout) FormatChart(pallet []string, list []subscan.NetworkPallet) error {
+	totalWidth := utils.TerminalWidth()
+	networkMaxWidth := s.networkMaxLen(list)
+	width := totalWidth - networkMaxWidth - 14
+	if data := s.formatChartErrData(list); len(data) != 0 {
+		fmt.Println()
+		fmt.Println("Error list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Error reason"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width)
+		fmt.Println(tb.Render("grid"))
+	}
+	fmt.Println()
+	if data := s.formatChartData(pallet, list, width); len(data) != 0 {
+		fmt.Println("Result list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Pallet"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width)
 		fmt.Println(tb.Render("grid"))
 	}
 	return nil

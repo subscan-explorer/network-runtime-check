@@ -16,6 +16,7 @@ import (
 
 	"github.com/subscan-explorer/network-runtime-check/conf"
 	"github.com/subscan-explorer/network-runtime-check/internal/api"
+	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
 type NetworkPallet struct {
@@ -61,19 +62,11 @@ func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPalle
 	}()
 
 	data := make([]NetworkPallet, 0, len(networkNode))
-	statusCh := make(chan string, 5)
-	doneCh := make(chan struct{})
-	go func() {
-		for ch := range statusCh {
-			fmt.Printf("\r%s", ch)
-		}
-		fmt.Printf("\rProcessing Complete!\n")
-		close(doneCh)
-	}()
+	statusCh, doneCh := utils.ProgressDisplay(len(networkNode))
 	var doneIdx = 0
 	for p := range palletCh {
 		doneIdx++
-		statusCh <- fmt.Sprintf("Processing: %d/%d", doneIdx, len(networkNode))
+		statusCh <- doneIdx
 		data = append(data, p)
 	}
 	close(statusCh)
