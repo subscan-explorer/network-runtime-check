@@ -18,25 +18,23 @@ func (e Exist) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPalle
 	if len(e.Pallet) == 0 {
 		return list
 	}
-	var palletSet map[string]struct{}
-	if len(e.Pallet) != 0 {
-		palletSet = make(map[string]struct{})
-		for _, p := range e.Pallet {
-			palletSet[strings.ToLower(p)] = struct{}{}
-		}
+	palletSet := make(map[string]struct{})
+	for _, p := range e.Pallet {
+		palletSet[strings.ToLower(p)] = struct{}{}
 	}
-
-	for i := 0; i < len(list); i++ {
-		if len(list[i].Pallet) == 0 {
-			continue
-		}
+	result := make([]subscan.NetworkPallet, 0, len(list))
+	for _, item := range list {
 		pallet := make([]string, 0, len(e.Pallet))
-		for _, p := range list[i].Pallet {
+		for _, p := range item.Pallet {
 			if _, ok := palletSet[strings.ToLower(p)]; ok {
 				pallet = append(pallet, p)
 			}
 		}
-		list[i].Pallet = pallet
+		if len(pallet) == 0 {
+			continue
+		}
+		item.Pallet = pallet
+		result = append(result, item)
 	}
-	return list
+	return result
 }

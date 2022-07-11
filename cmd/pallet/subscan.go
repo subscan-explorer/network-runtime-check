@@ -47,17 +47,14 @@ func newMatchCmd() *cobra.Command {
 			}
 			pe := strings.TrimSpace(cmd.Flag("pallet").Value.String())
 			ep := strings.TrimSpace(cmd.Flag("exclude-pallet").Value.String())
-			if len(pe) != 0 && len(ep) != 0 {
-				log.Fatalln("The pallet parameter and exclude-pallet parameter cannot exist at the same time")
-			}
-			var f filter.Filter = filter.Default{}
+			var fls []filter.Filter
 			if len(pe) != 0 {
-				f = filter.NewExist(strings.Split(pe, ","))
+				fls = append(fls, filter.NewExist(strings.Split(pe, ",")))
 			}
 			if len(ep) != 0 {
-				f = filter.NewExclude(strings.Split(ep, ","))
+				fls = append(fls, filter.NewExclude(strings.Split(ep, ",")))
 			}
-			palletMatch(cmd.Context(), networkName, websocketAddr, f, cmd.Flag("output").Value.String())
+			palletMatch(cmd.Context(), networkName, websocketAddr, fls, cmd.Flag("output").Value.String())
 		},
 	}
 	matchCmd.PersistentFlags().StringP("network", "w", "", "multiple separated by ',' \n eg: -w polkadot")
@@ -134,7 +131,7 @@ func networkComparePallet(ctx context.Context, networkName, websocketAddr []stri
 	}
 }
 
-func palletMatch(ctx context.Context, networkName, websocketAddr []string, fl filter.Filter, path string) {
+func palletMatch(ctx context.Context, networkName, websocketAddr []string, fls []filter.Filter, path string) {
 	var palletList []subscan.NetworkPallet
 	if len(networkName) != 0 {
 		log.Printf("get subscan network pallet")
@@ -154,7 +151,9 @@ func palletMatch(ctx context.Context, networkName, websocketAddr []string, fl fi
 	} else {
 		instance = output.NewStdout()
 	}
-	palletList = fl.FilterPallet(palletList)
+	for _, f := range fls {
+		palletList = f.FilterPallet(palletList)
+	}
 	if err := instance.FormatChart(palletList); err != nil {
 		log.Printf("output err: %s", err.Error())
 		return

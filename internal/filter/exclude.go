@@ -18,26 +18,27 @@ func (e Exclude) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPal
 	if len(e.Pallet) == 0 {
 		return list
 	}
-	var palletSet map[string]struct{}
-	if len(e.Pallet) != 0 {
-		palletSet = make(map[string]struct{})
-		for _, p := range e.Pallet {
-			palletSet[strings.ToLower(p)] = struct{}{}
-		}
+	palletSet := make(map[string]struct{})
+	for _, p := range e.Pallet {
+		palletSet[strings.ToLower(p)] = struct{}{}
 	}
 
-	for i := 0; i < len(list); i++ {
-		if len(list[i].Pallet) == 0 {
+	result := make([]subscan.NetworkPallet, 0, len(list))
+	for _, item := range list {
+		if len(item.Pallet) == 0 {
 			continue
 		}
-		pallet := make([]string, 0, len(e.Pallet))
-		for _, p := range list[i].Pallet {
+		exist := false
+		for _, p := range item.Pallet {
 			if _, ok := palletSet[strings.ToLower(p)]; ok {
-				continue
+				exist = true
+				break
 			}
-			pallet = append(pallet, p)
 		}
-		list[i].Pallet = pallet
+		if exist {
+			continue
+		}
+		result = append(result, item)
 	}
-	return list
+	return result
 }
