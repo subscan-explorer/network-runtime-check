@@ -17,19 +17,12 @@ type FormatCompareCharter interface {
 }
 
 type FormatCharter interface {
-	FormatChart([]string, []subscan.NetworkPallet) error
+	FormatChart([]subscan.NetworkPallet) error
 }
 
 type FormatCharterBase struct{}
 
-func (FormatCharterBase) formatChartData(pallet []string, list []subscan.NetworkPallet, maxWidth int) [][]string {
-	var palletSet map[string]struct{}
-	if len(pallet) != 0 {
-		palletSet = make(map[string]struct{})
-		for _, p := range pallet {
-			palletSet[strings.ToLower(p)] = struct{}{}
-		}
-	}
+func (FormatCharterBase) formatChartData(list []subscan.NetworkPallet, maxWidth int) [][]string {
 	var tableData [][]string
 	for _, np := range list {
 		if np.Err != nil {
@@ -37,15 +30,7 @@ func (FormatCharterBase) formatChartData(pallet []string, list []subscan.Network
 		}
 		var support, resultPallet []string
 		support = append(support, np.Network)
-		if palletSet != nil {
-			for _, p := range np.Pallet {
-				if _, ok := palletSet[strings.ToLower(p)]; ok {
-					resultPallet = append(resultPallet, p)
-				}
-			}
-		} else {
-			resultPallet = np.Pallet
-		}
+		resultPallet = np.Pallet
 		str := strings.Builder{}
 		remainWidth := maxWidth
 		for i := 0; i < len(resultPallet); {

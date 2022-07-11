@@ -70,7 +70,7 @@ func (f FileOutput) FormatCompareChart(pallet []string, list []subscan.NetworkPa
 	return fd.Sync()
 }
 
-func (f FileOutput) FormatChart(pallet []string, list []subscan.NetworkPallet) error {
+func (f FileOutput) FormatChart(list []subscan.NetworkPallet) error {
 	var fd, err = os.Create(f.path)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (f FileOutput) FormatChart(pallet []string, list []subscan.NetworkPallet) e
 	}
 	_, _ = fd.Write([]byte{'\n'})
 	const maxWidth = 180
-	if data := f.formatChartData(pallet, list, maxWidth); len(data) != 0 {
+	if data := f.formatChartData(list, maxWidth); len(data) != 0 {
 		_, _ = fd.WriteString("Result list:")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Pallet"})

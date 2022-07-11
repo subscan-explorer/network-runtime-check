@@ -76,6 +76,21 @@ subscan supported networks
 | altair    | System       |
 | ...       | ...          |
 
+##### Exclude supported pallets
+
+`./runtime-check pallet match -e System,Babe`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match -e System,Babe`
+
+##### output
+| Network                 | Pallet                           | 
+|-------------------------|----------------------------------|
+| polkadot                | Scheduler ... Preimage XcmPallet |
+| kusama                  | Timestamp ... Indices Balances   |
+| astar.api.onfinality.io | Utility ... Identity  Timestamp  |
+| ...                     | ...                              |
+
+
 #### Pallet compare
 
 ##### Network comparison with substrate standard pallet
