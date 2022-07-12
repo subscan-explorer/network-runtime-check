@@ -107,7 +107,7 @@ func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet
 	return nil
 }
 
-func (s Stdout) FormatChart(pallet []string, list []subscan.NetworkPallet) error {
+func (s Stdout) FormatChart(list []subscan.NetworkPallet) error {
 	totalWidth := utils.TerminalWidth()
 	networkMaxWidth := s.networkMaxLen(list)
 	width := totalWidth - networkMaxWidth - 14
@@ -122,7 +122,7 @@ func (s Stdout) FormatChart(pallet []string, list []subscan.NetworkPallet) error
 		fmt.Println(tb.Render("grid"))
 	}
 	fmt.Println()
-	if data := s.formatChartData(pallet, list, width); len(data) != 0 {
+	if data := s.formatChartData(list, width); len(data) != 0 {
 		fmt.Println("Result list:")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Pallet"})

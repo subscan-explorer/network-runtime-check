@@ -28,6 +28,7 @@ subscan supported networks
 
 `-w` query subscan network name, support websocket address, default all subscan network name  
 `-p` matching pallet, default all  
+`-e` Exclude supported pallets, default empty
 `-o` output to file path
 
 ##### Example
@@ -75,6 +76,21 @@ subscan supported networks
 | alephzero | System       |
 | altair    | System       |
 | ...       | ...          |
+
+##### Exclude supported pallets
+
+`./runtime-check pallet match -e babe,timestamp -p preimage,xcmpallet`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match -e babe,timestamp -p preimage,xcmpallet`
+
+##### output
+| Network  | Pallet              | 
+|----------|---------------------|
+| polkadot | Preimage  XcmPallet |
+| kusama   | Preimage  XcmPallet |
+| acala    | Preimage            |
+| ...      | ...                 |
+
 
 #### Pallet compare
 

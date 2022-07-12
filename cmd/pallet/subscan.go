@@ -10,6 +10,7 @@ import (
 	"github.com/subscan-explorer/network-runtime-check/conf"
 	"github.com/subscan-explorer/network-runtime-check/internal/api/github/substrate"
 	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/internal/filter"
 	"github.com/subscan-explorer/network-runtime-check/internal/output"
 	"github.com/subscan-explorer/network-runtime-check/internal/ws"
 )
@@ -45,15 +46,20 @@ func newMatchCmd() *cobra.Command {
 				}
 			}
 			pe := strings.TrimSpace(cmd.Flag("pallet").Value.String())
-			var palletList []string
+			ep := strings.TrimSpace(cmd.Flag("exclude-pallet").Value.String())
+			var fls []filter.Filter
 			if len(pe) != 0 {
-				palletList = strings.Split(pe, ",")
+				fls = append(fls, filter.NewExist(strings.Split(pe, ",")))
 			}
-			palletMatch(cmd.Context(), networkName, websocketAddr, palletList, cmd.Flag("output").Value.String())
+			if len(ep) != 0 {
+				fls = append(fls, filter.NewExclude(strings.Split(ep, ",")))
+			}
+			palletMatch(cmd.Context(), networkName, websocketAddr, fls, cmd.Flag("output").Value.String())
 		},
 	}
 	matchCmd.PersistentFlags().StringP("network", "w", "", "multiple separated by ',' \n eg: -w polkadot")
 	matchCmd.PersistentFlags().StringP("pallet", "p", "", "Find supported pallets, multiple separated by ',' \n eg: -p System,Babe")
+	matchCmd.PersistentFlags().StringP("exclude-pallet", "e", "", "Exclude supported pallets, multiple separated by ',' \n eg: -p System,Babe")
 	matchCmd.PersistentFlags().StringP("output", "o", "", "output to file path")
 	return matchCmd
 }
@@ -125,7 +131,7 @@ func networkComparePallet(ctx context.Context, networkName, websocketAddr []stri
 	}
 }
 
-func palletMatch(ctx context.Context, networkName, websocketAddr, pallet []string, path string) {
+func palletMatch(ctx context.Context, networkName, websocketAddr []string, fls []filter.Filter, path string) {
 	var palletList []subscan.NetworkPallet
 	if len(networkName) != 0 {
 		log.Printf("get subscan network pallet")
@@ -145,7 +151,10 @@ func palletMatch(ctx context.Context, networkName, websocketAddr, pallet []strin
 	} else {
 		instance = output.NewStdout()
 	}
-	if err := instance.FormatChart(pallet, palletList); err != nil {
+	for _, f := range fls {
+		palletList = f.FilterPallet(palletList)
+	}
+	if err := instance.FormatChart(palletList); err != nil {
 		log.Printf("output err: %s", err.Error())
 		return
 	}
