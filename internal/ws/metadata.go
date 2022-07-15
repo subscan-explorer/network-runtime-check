@@ -16,7 +16,7 @@ type metadata struct {
 	err      error
 }
 
-func GetMetadata(ctx context.Context, node []conf.ParamRule) []model.NetworkData[model.Metadata] {
+func GetMetadata(ctx context.Context, node []conf.NetworkRule) []model.NetworkData[model.Metadata] {
 	if len(node) == 0 {
 		return nil
 	}
@@ -25,13 +25,9 @@ func GetMetadata(ctx context.Context, node []conf.ParamRule) []model.NetworkData
 		wg := new(sync.WaitGroup)
 		for _, n := range node {
 			wg.Add(1)
-			go func(n conf.ParamRule) {
+			go func(n conf.NetworkRule) {
 				meta := metadata{}
-				if len(n.Domain) != 0 {
-					meta.network = n.Domain
-				} else {
-					meta.network = n.WsAddr
-				}
+				meta.network = n.Name
 				meta.metadata, meta.err = GetMetadataInfo(ctx, n.WsAddr)
 				palletCh <- meta
 				wg.Done()

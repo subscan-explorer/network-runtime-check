@@ -13,7 +13,7 @@ import (
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
-func NetworkMetadataList(ctx context.Context, node []string) []model.NetworkData[model.Metadata] {
+func NetworkMetadataList(ctx context.Context, node []conf.NetworkRule) []model.NetworkData[model.Metadata] {
 	concurrency := 2
 	if conf.Conf.APIKey != "" {
 		if c, err := APILimit(ctx); err != nil {
@@ -37,14 +37,14 @@ func NetworkMetadataList(ctx context.Context, node []string) []model.NetworkData
 			case limitCh <- struct{}{}:
 			}
 			wg.Add(1)
-			go func(addr string) {
+			go func(r conf.NetworkRule) {
 				var (
 					ne model.NetworkData[model.Metadata]
 					sv int
 				)
-				ne.Network = addr
-				if sv, _, ne.Err = runtimeList(ctx, addr); ne.Err == nil {
-					ne.Data, ne.Err = metadata(ctx, addr, sv)
+				ne.Network = r.Name
+				if sv, _, ne.Err = runtimeList(ctx, r.Domain); ne.Err == nil {
+					ne.Data, ne.Err = metadata(ctx, r.Domain, sv)
 				}
 				eventCh <- ne
 				<-limitCh

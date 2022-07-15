@@ -1,4 +1,4 @@
-package balances
+package rule
 
 import (
 	"context"
@@ -18,25 +18,30 @@ func NewParamCmd() *cobra.Command {
 		Short: "Check the extrinsic and event in the pallet",
 		Long:  "Check whether the extrinsic and event in the pallet conform to the parameter definition",
 		Run: func(cmd *cobra.Command, args []string) {
-			events := conf.Conf.ParamRule
-			if len(events) == 0 {
-				log.Fatalln("The rule list in the configuration file is required")
+			rfPath := cmd.Flag("rule").Value.String()
+			if len(rfPath) == 0 {
+				log.Fatalln("The rule configuration file is required")
+			}
+			rule := conf.LoadRule(rfPath)
+			if len(rule.Network) == 0 {
+				log.Fatalln("The network list in the rule file is required")
 			}
 			var out output.FormatEventCharter = output.NewStdout()
 			if path := cmd.Flag("output").Value.String(); len(path) > 0 {
 				out = output.NewFileOutput(path)
 			}
-			paramCheck(cmd.Context(), events, out)
+			paramCheck(cmd.Context(), rule.Network, out)
 		},
 	}
+	matchCmd.PersistentFlags().StringP("rule", "r", "", "rule config file")
 	matchCmd.PersistentFlags().StringP("output", "o", "", "output to file path")
 	return matchCmd
 }
 
-func paramCheck(ctx context.Context, node []conf.ParamRule, charter output.FormatEventCharter) {
+func paramCheck(ctx context.Context, node []conf.NetworkRule, charter output.FormatEventCharter) {
 	var (
-		domainNode []string
-		wsNode     []conf.ParamRule
+		domainNode []conf.NetworkRule
+		wsNode     []conf.NetworkRule
 	)
 
 	for _, e := range node {
@@ -45,7 +50,7 @@ func paramCheck(ctx context.Context, node []conf.ParamRule, charter output.Forma
 			continue
 		}
 		if len(e.Domain) != 0 {
-			domainNode = append(domainNode, strings.ToLower(e.Domain))
+			domainNode = append(domainNode, e)
 		}
 	}
 

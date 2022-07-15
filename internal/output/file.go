@@ -98,7 +98,7 @@ func (f FileOutput) FormatChart(list []model.NetworkData[string]) error {
 	return fd.Sync()
 }
 
-func (f FileOutput) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.ParamRule) error {
+func (f FileOutput) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.NetworkRule) error {
 	var fd, err = os.Create(f.path)
 	if err != nil {
 		return err

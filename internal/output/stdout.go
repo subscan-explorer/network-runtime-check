@@ -135,7 +135,7 @@ func (s Stdout) FormatChart(list []model.NetworkData[string]) error {
 	return nil
 }
 
-func (s Stdout) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.ParamRule) error {
+func (s Stdout) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.NetworkRule) error {
 	totalWidth := utils.TerminalWidth()
 	networkMaxWidth := networkMaxLen(list)
 	width := totalWidth - networkMaxWidth - 14

@@ -22,7 +22,7 @@ type FormatCharter interface {
 }
 
 type FormatEventCharter interface {
-	FormatEventChart([]model.NetworkData[model.Metadata], []conf.ParamRule) error
+	FormatEventChart([]model.NetworkData[model.Metadata], []conf.NetworkRule) error
 }
 
 type FormatCharterBase struct{}
@@ -91,13 +91,10 @@ func networkMaxLen[T any](list []model.NetworkData[T]) (maxLen int) {
 	return
 }
 
-func (FormatCharterBase) formatExtrinsicChartData(nodes []conf.ParamRule, list []model.NetworkData[model.Metadata]) [][]string {
-	nodeMap := make(map[string]conf.ParamRule)
+func (FormatCharterBase) formatExtrinsicChartData(nodes []conf.NetworkRule, list []model.NetworkData[model.Metadata]) [][]string {
+	nodeMap := make(map[string]conf.NetworkRule)
 	for _, node := range nodes {
-		if strings.HasPrefix(node.WsAddr, "ws://") || strings.HasPrefix(node.WsAddr, "wss://") {
-			nodeMap[node.WsAddr] = node
-		}
-		nodeMap[strings.ToLower(node.Domain)] = node
+		nodeMap[node.Name] = node
 	}
 	var tableData [][]string
 	for _, meta := range list {
@@ -138,22 +135,26 @@ func (FormatCharterBase) formatExtrinsicChartData(nodes []conf.ParamRule, list [
 							str.WriteString("]")
 							row = append(row, str.String())
 						}
+						delete(palletMap, strings.ToLower(call.Name))
 						tableData = append(tableData, row)
 					}
 				}
+			}
+		}
+		for p, m := range peMap {
+			for e := range m {
+				row := []string{meta.Network, p, e, NotExist, "Not Found"}
+				tableData = append(tableData, row)
 			}
 		}
 	}
 	return tableData
 }
 
-func (FormatCharterBase) formatEventChartData(nodes []conf.ParamRule, list []model.NetworkData[model.Metadata]) [][]string {
-	nodeMap := make(map[string]conf.ParamRule)
+func (FormatCharterBase) formatEventChartData(nodes []conf.NetworkRule, list []model.NetworkData[model.Metadata]) [][]string {
+	nodeMap := make(map[string]conf.NetworkRule)
 	for _, node := range nodes {
-		if strings.HasPrefix(node.WsAddr, "ws://") || strings.HasPrefix(node.WsAddr, "wss://") {
-			nodeMap[node.WsAddr] = node
-		}
-		nodeMap[strings.ToLower(node.Domain)] = node
+		nodeMap[node.Name] = node
 	}
 	var tableData [][]string
 	for _, meta := range list {
@@ -197,9 +198,17 @@ func (FormatCharterBase) formatEventChartData(nodes []conf.ParamRule, list []mod
 							str.WriteString("]")
 							row = append(row, str.String())
 						}
+						delete(palletMap, strings.ToLower(e.Name))
 						tableData = append(tableData, row)
 					}
 				}
+			}
+		}
+
+		for p, m := range peMap {
+			for e := range m {
+				row := []string{meta.Network, p, e, NotExist, "Not Found"}
+				tableData = append(tableData, row)
 			}
 		}
 	}

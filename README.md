@@ -133,30 +133,64 @@ subscan supported networks
 
 ##### Check whether the extrinsic and event in the pallet conform to the parameter definition
 
-`-f` configuration file path
+`-r` rule configuration file path
 `-o` output to file path
 
 ##### Config file rule
 
 ```yaml
-  - domain: polkadot # subscan domain
-    wsAddr: wss://rpc.polkadot.io/ # websocket addr  Priority use
-    rule_inherit: polkadot  # inherit rules from polkadot,override custom rule
+rule:
+  - name: common
     pallet:
-      - name: Balances  # pallet name
+      - name: Balances
         event:
-          - name: Transfer  # event id
-            param: [ AccountId,AccountId,Balance ] # param
+          - name: Transfer
+            param: [ AccountId,AccountId,Balance ]
         extrinsic:
-          - name: Transfer  # extrinsic id
+          - name: Transfer
             param: [ Address, Balance ]
+      - name: System
+        event:
+          - name: ExtrinsicSuccess
+            param: [ DispatchInfo ]
+          - name: ExtrinsicFailed
+            param: [ DispatchError,DispatchInfo ]
+  - name: pmk
+    pallet:
+      - name: PredictionMarkets
+        event:
+          - name: MarketDisputed
+            param: [ "MarketIdOf","MarketStatus","MarketDispute<AccountId, BlockNumber>" ]
+          - name: MarketRejected
+            param: [ MarketIdOf ]
+        extrinsic:
+          - name: buy_complete_set
+            param: [ MarketIdOf,BalanceOf ]
+      - name: ParachainSystem
+        event:
+          - name: DownwardMessagesProcessed
+            param: [ Weight,relay_chain::Hash ]
+
+network:
+  - name: polkadot # name key
+    domain: polkadot # subscan domain
+    wsAddr: wss://rpc.polkadot.io/ # websocket addr  Priority use
+    rule_inherit: [ common,pmk ]    # inherit rules from `rule` field
+    pallet:
+      - name: Treasury
+        event:
+          - name: Deposit # event id
+            param: [ BalanceOf ]
+        extrinsic:
+          - name: Awarded # extrinsic id
+            param: [ ProposalIndex, BalanceOf, AccountId ]
 ```
 
 ##### Example
 
-`./runtime-check param`
+`./runtime-check param -r rule.yml`
 
-`docker run --name runtime-check --rm runtime-check bin/runtime-check param`
+`docker run --name runtime-check --rm runtime-check bin/runtime-check param -r rule.yml`
 
 ###### output
 
