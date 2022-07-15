@@ -3,7 +3,8 @@ package output
 import (
 	"strings"
 
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/conf"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
@@ -13,16 +14,20 @@ const (
 )
 
 type FormatCompareCharter interface {
-	FormatCompareChart([]string, []subscan.NetworkPallet) error
+	FormatCompareChart([]string, []model.NetworkData[string]) error
 }
 
 type FormatCharter interface {
-	FormatChart([]subscan.NetworkPallet) error
+	FormatChart([]model.NetworkData[string]) error
+}
+
+type FormatEventCharter interface {
+	FormatEventChart([]model.NetworkData[model.Metadata], []conf.ParamRule) error
 }
 
 type FormatCharterBase struct{}
 
-func (FormatCharterBase) formatChartData(list []subscan.NetworkPallet, maxWidth int) [][]string {
+func (FormatCharterBase) formatChartData(list []model.NetworkData[string], maxWidth int) [][]string {
 	var tableData [][]string
 	for _, np := range list {
 		if np.Err != nil {
@@ -30,7 +35,7 @@ func (FormatCharterBase) formatChartData(list []subscan.NetworkPallet, maxWidth 
 		}
 		var support, resultPallet []string
 		support = append(support, np.Network)
-		resultPallet = np.Pallet
+		resultPallet = np.Data
 		str := strings.Builder{}
 		remainWidth := maxWidth
 		for i := 0; i < len(resultPallet); {
@@ -65,7 +70,7 @@ func (FormatCharterBase) formatChartData(list []subscan.NetworkPallet, maxWidth 
 	return tableData
 }
 
-func (FormatCharterBase) formatChartErrData(list []subscan.NetworkPallet) [][]string {
+func formatChartErrData[T any](list []model.NetworkData[T]) [][]string {
 	var tableData [][]string
 	for _, p := range list {
 		if p.Err == nil {
@@ -76,7 +81,7 @@ func (FormatCharterBase) formatChartErrData(list []subscan.NetworkPallet) [][]st
 	return tableData
 }
 
-func (FormatCharterBase) networkMaxLen(list []subscan.NetworkPallet) (maxLen int) {
+func networkMaxLen[T any](list []model.NetworkData[T]) (maxLen int) {
 	for _, pallet := range list {
 		l := len(pallet.Network)
 		if l > maxLen {
@@ -84,4 +89,119 @@ func (FormatCharterBase) networkMaxLen(list []subscan.NetworkPallet) (maxLen int
 		}
 	}
 	return
+}
+
+func (FormatCharterBase) formatExtrinsicChartData(nodes []conf.ParamRule, list []model.NetworkData[model.Metadata]) [][]string {
+	nodeMap := make(map[string]conf.ParamRule)
+	for _, node := range nodes {
+		if strings.HasPrefix(node.WsAddr, "ws://") || strings.HasPrefix(node.WsAddr, "wss://") {
+			nodeMap[node.WsAddr] = node
+		}
+		nodeMap[strings.ToLower(node.Domain)] = node
+	}
+	var tableData [][]string
+	for _, meta := range list {
+		if meta.Err != nil {
+			continue
+		}
+		peMap := make(map[string]map[string][]string)
+		if c, ok := nodeMap[meta.Network]; ok {
+			for _, p := range c.Pallet {
+				m := make(map[string][]string)
+				for _, e := range p.Extrinsic {
+					m[strings.ToLower(e.Name)] = e.Param
+				}
+				peMap[strings.ToLower(p.Name)] = m
+			}
+		} else {
+			continue
+		}
+		for _, me := range meta.Data {
+			if palletMap, ok := peMap[strings.ToLower(me.Name)]; ok {
+				for _, call := range me.Calls {
+					if params, ok := palletMap[strings.ToLower(call.Name)]; ok {
+						row := []string{meta.Network, me.Name, call.Name}
+						args := make([]string, 0, len(call.Args))
+						for _, arg := range call.Args {
+							args = append(args, arg.TypeName)
+						}
+						if utils.SliceEqual(params, args) {
+							row = append(row, Exist)
+						} else {
+							row = append(row, NotExist)
+							str := strings.Builder{}
+							str.WriteString("Exception: [")
+							str.WriteString(strings.Join(params, ","))
+							str.WriteString("] ")
+							str.WriteString("Actual: [")
+							str.WriteString(strings.Join(args, ","))
+							str.WriteString("]")
+							row = append(row, str.String())
+						}
+						tableData = append(tableData, row)
+					}
+				}
+			}
+		}
+	}
+	return tableData
+}
+
+func (FormatCharterBase) formatEventChartData(nodes []conf.ParamRule, list []model.NetworkData[model.Metadata]) [][]string {
+	nodeMap := make(map[string]conf.ParamRule)
+	for _, node := range nodes {
+		if strings.HasPrefix(node.WsAddr, "ws://") || strings.HasPrefix(node.WsAddr, "wss://") {
+			nodeMap[node.WsAddr] = node
+		}
+		nodeMap[strings.ToLower(node.Domain)] = node
+	}
+	var tableData [][]string
+	for _, meta := range list {
+		if meta.Err != nil {
+			continue
+		}
+		peMap := make(map[string]map[string][]string)
+		if c, ok := nodeMap[meta.Network]; ok {
+			for _, p := range c.Pallet {
+				m := make(map[string][]string)
+				for _, e := range p.Event {
+					m[strings.ToLower(e.Name)] = e.Param
+				}
+				peMap[strings.ToLower(p.Name)] = m
+			}
+		} else {
+			continue
+		}
+
+		for _, me := range meta.Data {
+			if palletMap, ok := peMap[strings.ToLower(me.Name)]; ok {
+				for _, e := range me.Events {
+					if params, ok := palletMap[strings.ToLower(e.Name)]; ok {
+						var row = []string{meta.Network, me.Name, e.Name}
+						var args []string
+						if len(e.ArgsTypeName) != 0 {
+							args = e.ArgsTypeName
+						} else if len(e.Args) != 0 {
+							args = e.Args
+						}
+						if utils.SliceEqual(params, args) {
+							row = append(row, Exist)
+						} else {
+							row = append(row, NotExist)
+							str := strings.Builder{}
+							str.WriteString("Exception: [")
+							str.WriteString(strings.Join(params, ","))
+							str.WriteString("] ")
+							str.WriteString("Actual: [")
+							str.WriteString(strings.Join(args, ","))
+							str.WriteString("]")
+							row = append(row, str.String())
+						}
+						tableData = append(tableData, row)
+					}
+				}
+			}
+		}
+	}
+	return tableData
 }

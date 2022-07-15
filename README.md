@@ -84,13 +84,13 @@ subscan supported networks
 `docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match -e babe,timestamp -p preimage,xcmpallet`
 
 ##### output
+
 | Network  | Pallet              | 
 |----------|---------------------|
 | polkadot | Preimage  XcmPallet |
 | kusama   | Preimage  XcmPallet |
 | acala    | Preimage            |
 | ...      | ...                 |
-
 
 #### Pallet compare
 
@@ -128,3 +128,41 @@ subscan supported networks
 | Utility | O     | O    | O                       |
 | Babe    | O     | O    | X                       |
 | ...     | ...   |      |                         |
+
+#### Param
+
+##### Check whether the extrinsic and event in the pallet conform to the parameter definition
+
+`-f` configuration file path
+`-o` output to file path
+
+##### Config file rule
+
+```yaml
+  - domain: polkadot # subscan domain
+    wsAddr: wss://rpc.polkadot.io/ # websocket addr  Priority use
+    rule_inherit: polkadot  # inherit rules from polkadot,override custom rule
+    pallet:
+      - name: Balances  # pallet name
+        event:
+          - name: Transfer  # event id
+            param: [ AccountId,AccountId,Balance ] # param
+        extrinsic:
+          - name: Transfer  # extrinsic id
+            param: [ Address, Balance ]
+```
+
+##### Example
+
+`./runtime-check param`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check param`
+
+###### output
+
+| Network  | Pallet   | Event    | Check | Note |
+|----------|----------|----------|-------|------|
+| polkadot | Balances | Transfer | O     |      |
+| khala    | Balances | Transfer | O     |      |
+| ...      | ...      |          |       |      |
+

@@ -1,15 +1,15 @@
 package filter
 
 import (
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 )
 
 type Filter interface {
-	FilterPallet([]subscan.NetworkPallet) []subscan.NetworkPallet
+	FilterPallet([]model.NetworkData[string]) []model.NetworkData[string]
 }
 
 type Default struct{}
 
-func (Default) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPallet {
+func (Default) FilterPallet(list []model.NetworkData[string]) []model.NetworkData[string] {
 	return list
 }

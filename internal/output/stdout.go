@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/bndr/gotabulate"
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/conf"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
@@ -17,7 +18,7 @@ func NewStdout() *Stdout {
 	return new(Stdout)
 }
 
-func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet) error {
+func (s Stdout) FormatCompareChart(pallet []string, list []model.NetworkData[string]) error {
 	table := make([][]string, len(pallet))
 	palletIdx := make(map[string]int, len(pallet))
 	network := make([]string, 0, len(list))
@@ -34,7 +35,7 @@ func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet
 		}
 		i++
 		network = append(network, np.Network)
-		for _, p := range np.Pallet {
+		for _, p := range np.Data {
 			if idx, ok := palletIdx[strings.ToLower(p)]; ok {
 				table[idx][i] = Exist
 			}
@@ -51,7 +52,7 @@ func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet
 	totalWidth := utils.TerminalWidth()
 	networkMaxWidth := utils.MaxLenArrString(network)
 	width := totalWidth - networkMaxWidth - 14
-	if data := s.formatChartErrData(list); len(data) != 0 {
+	if data := formatChartErrData(list); len(data) != 0 {
 		fmt.Println()
 		fmt.Println("Error list:")
 		tb := gotabulate.Create(data)
@@ -107,11 +108,11 @@ func (s Stdout) FormatCompareChart(pallet []string, list []subscan.NetworkPallet
 	return nil
 }
 
-func (s Stdout) FormatChart(list []subscan.NetworkPallet) error {
+func (s Stdout) FormatChart(list []model.NetworkData[string]) error {
 	totalWidth := utils.TerminalWidth()
-	networkMaxWidth := s.networkMaxLen(list)
+	networkMaxWidth := networkMaxLen(list)
 	width := totalWidth - networkMaxWidth - 14
-	if data := s.formatChartErrData(list); len(data) != 0 {
+	if data := formatChartErrData(list); len(data) != 0 {
 		fmt.Println()
 		fmt.Println("Error list:")
 		tb := gotabulate.Create(data)
@@ -129,6 +130,46 @@ func (s Stdout) FormatChart(list []subscan.NetworkPallet) error {
 		tb.SetAlign("left")
 		tb.SetWrapStrings(true)
 		tb.SetMaxCellSize(width)
+		fmt.Println(tb.Render("grid"))
+	}
+	return nil
+}
+
+func (s Stdout) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.ParamRule) error {
+	totalWidth := utils.TerminalWidth()
+	networkMaxWidth := networkMaxLen(list)
+	width := totalWidth - networkMaxWidth - 14
+
+	if data := formatChartErrData(list); len(data) != 0 {
+		fmt.Println()
+		fmt.Println("Error list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Error reason"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width)
+		fmt.Println(tb.Render("grid"))
+	}
+
+	fmt.Println()
+	if data := s.formatEventChartData(c, list); len(data) != 0 {
+		fmt.Println("Event list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Pallet", "Event", "Check", "Note"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width / 5)
+		fmt.Println(tb.Render("grid"))
+	}
+
+	fmt.Println()
+	if data := s.formatExtrinsicChartData(c, list); len(data) != 0 {
+		fmt.Println("Extrinsic list:")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Pallet", "Extrinsic", "Check", "Note"})
+		tb.SetAlign("left")
+		tb.SetWrapStrings(true)
+		tb.SetMaxCellSize(width / 5)
 		fmt.Println(tb.Render("grid"))
 	}
 	return nil

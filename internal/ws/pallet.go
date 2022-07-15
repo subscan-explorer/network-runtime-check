@@ -5,18 +5,18 @@ import (
 	"sync"
 	"time"
 
-	scalecodec "github.com/itering/scale.go"
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/itering/scale.go/types"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
 type networkPallet struct {
-	network string
-	codec   *scalecodec.MetadataDecoder
-	Err     error
+	network  string
+	metadata *types.MetadataStruct
+	Err      error
 }
 
-func NetworkPalletList(ctx context.Context, node map[string]string) []subscan.NetworkPallet {
+func NetworkPalletList(ctx context.Context, node map[string]string) []model.NetworkData[string] {
 	if len(node) == 0 {
 		return nil
 	}
@@ -27,7 +27,7 @@ func NetworkPalletList(ctx context.Context, node map[string]string) []subscan.Ne
 			wg.Add(1)
 			go func(network string, addr string) {
 				pallet := networkPallet{network: network}
-				pallet.codec, pallet.Err = getMetadataModules(ctx, addr)
+				pallet.metadata, pallet.Err = GetMetadataInfo(ctx, addr)
 				palletCh <- pallet
 				wg.Done()
 			}(name, addr)
@@ -36,24 +36,21 @@ func NetworkPalletList(ctx context.Context, node map[string]string) []subscan.Ne
 		close(palletCh)
 	}()
 
-	data := make([]subscan.NetworkPallet, 0, len(node))
+	data := make([]model.NetworkData[string], 0, len(node))
 	statusCh, doneCh := utils.ProgressDisplay(len(node))
 	var doneIdx = 0
 	for p := range palletCh {
 		doneIdx++
 		statusCh <- doneIdx
-		pl := subscan.NetworkPallet{
+		pl := model.NetworkData[string]{
 			Network: p.network,
 		}
 		if p.Err != nil {
 			pl.Err = p.Err
 		} else {
-			pl.Err = p.codec.Process()
-			if pl.Err == nil {
-				pl.Pallet = make([]string, 0, len(p.codec.Metadata.Metadata.Modules))
-				for _, m := range p.codec.Metadata.Metadata.Modules {
-					pl.Pallet = append(pl.Pallet, m.Name)
-				}
+			pl.Data = make([]string, 0, len(p.metadata.Metadata.Modules))
+			for _, m := range p.metadata.Metadata.Modules {
+				pl.Data = append(pl.Data, m.Name)
 			}
 		}
 		data = append(data, pl)
@@ -63,7 +60,7 @@ func NetworkPalletList(ctx context.Context, node map[string]string) []subscan.Ne
 	return data
 }
 
-func getMetadataModules(ctx context.Context, addr string) (*scalecodec.MetadataDecoder, error) {
+func GetMetadataInfo(ctx context.Context, addr string) (*types.MetadataStruct, error) {
 	var (
 		ep             *Endpoint
 		subCtx, cancel = context.WithTimeout(ctx, time.Second*30)

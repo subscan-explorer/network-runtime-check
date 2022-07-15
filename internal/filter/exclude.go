@@ -3,7 +3,7 @@ package filter
 import (
 	"strings"
 
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 )
 
 func NewExclude(pallet []string) *Exclude {
@@ -14,7 +14,7 @@ type Exclude struct {
 	Pallet []string
 }
 
-func (e Exclude) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPallet {
+func (e Exclude) FilterPallet(list []model.NetworkData[string]) []model.NetworkData[string] {
 	if len(e.Pallet) == 0 {
 		return list
 	}
@@ -23,13 +23,13 @@ func (e Exclude) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPal
 		palletSet[strings.ToLower(p)] = struct{}{}
 	}
 
-	result := make([]subscan.NetworkPallet, 0, len(list))
+	result := make([]model.NetworkData[string], 0, len(list))
 	for _, item := range list {
-		if len(item.Pallet) == 0 {
+		if len(item.Data) == 0 {
 			continue
 		}
 		exist := false
-		for _, p := range item.Pallet {
+		for _, p := range item.Data {
 			if _, ok := palletSet[strings.ToLower(p)]; ok {
 				exist = true
 				break
