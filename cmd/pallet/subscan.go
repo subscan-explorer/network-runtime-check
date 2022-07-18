@@ -11,6 +11,7 @@ import (
 	"github.com/subscan-explorer/network-runtime-check/internal/api/github/substrate"
 	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
 	"github.com/subscan-explorer/network-runtime-check/internal/filter"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 	"github.com/subscan-explorer/network-runtime-check/internal/output"
 	"github.com/subscan-explorer/network-runtime-check/internal/ws"
 )
@@ -107,7 +108,7 @@ func networkComparePallet(ctx context.Context, networkName, websocketAddr []stri
 		log.Println("get the substrate pallet is empty")
 		return
 	}
-	var palletList []subscan.NetworkPallet
+	var palletList []model.NetworkData[string]
 	if len(networkName) != 0 {
 		log.Printf("get subscan network pallet")
 		palletList = append(palletList, subscan.NetworkPalletList(ctx, networkName)...)
@@ -132,7 +133,7 @@ func networkComparePallet(ctx context.Context, networkName, websocketAddr []stri
 }
 
 func palletMatch(ctx context.Context, networkName, websocketAddr []string, fls []filter.Filter, path string) {
-	var palletList []subscan.NetworkPallet
+	var palletList []model.NetworkData[string]
 	if len(networkName) != 0 {
 		log.Printf("get subscan network pallet")
 		palletList = append(palletList, subscan.NetworkPalletList(ctx, networkName)...)

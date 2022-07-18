@@ -1,11 +1,15 @@
 package subscan
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/subscan-explorer/network-runtime-check/conf"
 	"github.com/subscan-explorer/network-runtime-check/internal/api"
@@ -56,4 +60,62 @@ func APILimit(ctx context.Context) (int, error) {
 		break
 	}
 	return rateLimit, nil
+}
+
+func sendRequest[T any](ctx context.Context, host string, reqBody []byte) (*Resp[T], error) {
+	var (
+		req        *http.Request
+		rsp        *http.Response
+		rspData    = new(Resp[T])
+		retryCount = 3
+		err        error
+	)
+	sendReq := func() (bool, time.Duration, error) {
+		if req, err = http.NewRequestWithContext(ctx, http.MethodPost, host, bytes.NewBuffer(reqBody)); err != nil {
+			return false, 0, err
+		}
+		req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		if conf.Conf.APIKey != "" {
+			req.Header.Set("X-API-Key", conf.Conf.APIKey)
+		}
+
+		if rsp, err = api.HTTPCli.Do(req); err != nil {
+			return true, 0, err
+		}
+		defer rsp.Body.Close()
+		if rsp.StatusCode != 200 {
+			_, _ = io.Copy(ioutil.Discard, rsp.Body)
+			if rsp.StatusCode == http.StatusTooManyRequests {
+				delay, _ := strconv.Atoi(rsp.Header.Get("Retry-After"))
+				return true, time.Second * time.Duration(delay), errors.New("API rate limit exceeded")
+			}
+			return true, 0, errors.New(rsp.Status)
+		}
+		if err = json.NewDecoder(rsp.Body).Decode(&rspData); err != nil {
+			return false, 0, err
+		}
+		if rspData.Code != 0 {
+			return false, 0, errors.New(rspData.Message)
+		}
+		return false, 0, nil
+	}
+
+	for {
+		if retry, delay, err := sendReq(); err != nil {
+			if retry && retryCount > 0 {
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(delay):
+				}
+				if delay == 0 {
+					retryCount--
+				}
+				continue
+			}
+			return nil, err
+		}
+		break
+	}
+	return rspData, nil
 }

@@ -32,3 +32,19 @@ func Reverse[T any](arr []T) {
 		j--
 	}
 }
+
+func SliceEqual[T comparable](a []T, b []T) bool {
+	var maps = make(map[T]int)
+	for _, t := range a {
+		maps[t]++
+	}
+	for _, t := range b {
+		maps[t]--
+	}
+	for _, v := range maps {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}

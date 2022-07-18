@@ -84,13 +84,13 @@ subscan supported networks
 `docker run --name runtime-check --rm runtime-check bin/runtime-check pallet match -e babe,timestamp -p preimage,xcmpallet`
 
 ##### output
+
 | Network  | Pallet              | 
 |----------|---------------------|
 | polkadot | Preimage  XcmPallet |
 | kusama   | Preimage  XcmPallet |
 | acala    | Preimage            |
 | ...      | ...                 |
-
 
 #### Pallet compare
 
@@ -128,3 +128,75 @@ subscan supported networks
 | Utility | O     | O    | O                       |
 | Babe    | O     | O    | X                       |
 | ...     | ...   |      |                         |
+
+#### Param
+
+##### Check whether the extrinsic and event in the pallet conform to the parameter definition
+
+`-r` rule configuration file path
+`-o` output to file path
+
+##### Config file rule
+
+```yaml
+rule:
+  - name: common
+    pallet:
+      - name: Balances
+        event:
+          - name: Transfer
+            param: [ AccountId,AccountId,Balance ]
+        extrinsic:
+          - name: Transfer
+            param: [ Address, Balance ]
+      - name: System
+        event:
+          - name: ExtrinsicSuccess
+            param: [ DispatchInfo ]
+          - name: ExtrinsicFailed
+            param: [ DispatchError,DispatchInfo ]
+  - name: pmk
+    pallet:
+      - name: PredictionMarkets
+        event:
+          - name: MarketDisputed
+            param: [ "MarketIdOf","MarketStatus","MarketDispute<AccountId, BlockNumber>" ]
+          - name: MarketRejected
+            param: [ MarketIdOf ]
+        extrinsic:
+          - name: buy_complete_set
+            param: [ MarketIdOf,BalanceOf ]
+      - name: ParachainSystem
+        event:
+          - name: DownwardMessagesProcessed
+            param: [ Weight,relay_chain::Hash ]
+
+network:
+  - name: polkadot # name key
+    domain: polkadot # subscan domain
+    wsAddr: wss://rpc.polkadot.io/ # websocket addr  Priority use
+    rule_inherit: [ common,pmk ]    # inherit rules from `rule` field
+    pallet:
+      - name: Treasury
+        event:
+          - name: Deposit # event id
+            param: [ BalanceOf ]
+        extrinsic:
+          - name: Awarded # extrinsic id
+            param: [ ProposalIndex, BalanceOf, AccountId ]
+```
+
+##### Example
+
+`./runtime-check param -r rule.yml`
+
+`docker run --name runtime-check --rm runtime-check bin/runtime-check param -r rule.yml`
+
+###### output
+
+| Network  | Pallet   | Event    | Check | Note |
+|----------|----------|----------|-------|------|
+| polkadot | Balances | Transfer | O     |      |
+| khala    | Balances | Transfer | O     |      |
+| ...      | ...      |          |       |      |
+

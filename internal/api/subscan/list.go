@@ -2,30 +2,17 @@ package subscan
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/subscan-explorer/network-runtime-check/conf"
-	"github.com/subscan-explorer/network-runtime-check/internal/api"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 	"github.com/subscan-explorer/network-runtime-check/internal/utils"
 )
 
-type NetworkPallet struct {
-	Network string
-	Pallet  []string
-	Err     error
-}
-
-func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPallet {
+func NetworkPalletList(ctx context.Context, networkNode []string) []model.NetworkData[string] {
 	concurrency := 2
 	if conf.Conf.APIKey != "" {
 		if c, err := APILimit(ctx); err != nil {
@@ -38,7 +25,7 @@ func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPalle
 	}
 	log.Printf("current concurrency: %d\n", concurrency)
 	limitCh := make(chan struct{}, concurrency)
-	palletCh := make(chan NetworkPallet, concurrency)
+	palletCh := make(chan model.NetworkData[string], concurrency)
 	go func() {
 		wg := new(sync.WaitGroup)
 	BEGIN:
@@ -50,8 +37,8 @@ func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPalle
 			}
 			wg.Add(1)
 			go func(nw string) {
-				result, err := list(ctx, nw)
-				palletCh <- NetworkPallet{Network: nw, Pallet: result, Err: err}
+				_, result, err := runtimeList(ctx, nw)
+				palletCh <- model.NetworkData[string]{Network: nw, Data: result, Err: err}
 				<-limitCh
 				wg.Done()
 			}(network)
@@ -61,7 +48,7 @@ func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPalle
 		close(palletCh)
 	}()
 
-	data := make([]NetworkPallet, 0, len(networkNode))
+	data := make([]model.NetworkData[string], 0, len(networkNode))
 	statusCh, doneCh := utils.ProgressDisplay(len(networkNode))
 	var doneIdx = 0
 	for p := range palletCh {
@@ -74,75 +61,33 @@ func NetworkPalletList(ctx context.Context, networkNode []string) []NetworkPalle
 	return data
 }
 
-type ListResp struct {
+type Resp[T any] struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-	Data    struct {
-		List []struct {
-			Modules string `json:"modules"`
-		} `json:"list"`
-	} `json:"data"`
+	Data    T      `json:"data"`
 }
 
-func list(ctx context.Context, network string) ([]string, error) {
-	var metadataURL = fmt.Sprintf("https://%s.api.subscan.io/api/scan/", network) + "runtime/list"
-	var (
-		req        *http.Request
-		rsp        *http.Response
-		rspData    ListResp
-		retryCount = 3
-		err        error
-	)
-	if req, err = http.NewRequestWithContext(ctx, http.MethodPost, metadataURL, nil); err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	if conf.Conf.APIKey != "" {
-		req.Header.Set("X-API-Key", conf.Conf.APIKey)
-	}
-	sendReq := func() (bool, time.Duration, error) {
-		if rsp, err = api.HTTPCli.Do(req); err != nil {
-			return true, 0, err
-		}
-		defer rsp.Body.Close()
-		if rsp.StatusCode != 200 {
-			_, _ = io.Copy(ioutil.Discard, rsp.Body)
-			if rsp.StatusCode == http.StatusTooManyRequests {
-				delay, _ := strconv.Atoi(rsp.Header.Get("Retry-After"))
-				return true, time.Second * time.Duration(delay), errors.New("API rate limit exceeded")
-			}
-			return false, 0, errors.New(rsp.Status)
-		}
-		if err = json.NewDecoder(rsp.Body).Decode(&rspData); err != nil {
-			return false, 0, err
-		}
-		if rspData.Code != 0 {
-			return false, 0, errors.New(rspData.Message)
-		}
-		return false, 0, nil
-	}
+type Modules struct {
+	List []struct {
+		SpecVersion int    `json:"spec_version"`
+		Modules     string `json:"modules"`
+	} `json:"list"`
+}
 
-	for {
-		if retry, delay, err := sendReq(); err != nil {
-			if retry && retryCount > 0 {
-				select {
-				case <-ctx.Done():
-					return nil, ctx.Err()
-				case <-time.After(delay):
-				}
-				if delay == 0 {
-					retryCount--
-				}
-				continue
-			}
-			return nil, err
-		}
-		break
+func runtimeList(ctx context.Context, network string) (int, []string, error) {
+	var listURL = fmt.Sprintf("https://%s.api.subscan.io/api/scan/", network) + "runtime/list"
+	var (
+		rspData *Resp[Modules]
+		err     error
+	)
+	if rspData, err = sendRequest[Modules](ctx, listURL, nil); err != nil {
+		return 0, nil, err
 	}
 
 	if len(rspData.Data.List) == 0 {
-		return nil, nil
+		return 0, nil, nil
 	}
 	// API保证了第一个值为最新spec
-	return strings.Split(rspData.Data.List[0].Modules, "|"), nil
+	result := rspData.Data.List[0]
+	return result.SpecVersion, strings.Split(result.Modules, "|"), nil
 }

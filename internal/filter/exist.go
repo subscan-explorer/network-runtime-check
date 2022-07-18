@@ -3,7 +3,7 @@ package filter
 import (
 	"strings"
 
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 )
 
 func NewExist(pallet []string) *Exist {
@@ -14,7 +14,7 @@ type Exist struct {
 	Pallet []string
 }
 
-func (e Exist) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPallet {
+func (e Exist) FilterPallet(list []model.NetworkData[string]) []model.NetworkData[string] {
 	if len(e.Pallet) == 0 {
 		return list
 	}
@@ -22,10 +22,10 @@ func (e Exist) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPalle
 	for _, p := range e.Pallet {
 		palletSet[strings.ToLower(p)] = struct{}{}
 	}
-	result := make([]subscan.NetworkPallet, 0, len(list))
+	result := make([]model.NetworkData[string], 0, len(list))
 	for _, item := range list {
 		pallet := make([]string, 0, len(e.Pallet))
-		for _, p := range item.Pallet {
+		for _, p := range item.Data {
 			if _, ok := palletSet[strings.ToLower(p)]; ok {
 				pallet = append(pallet, p)
 			}
@@ -33,7 +33,7 @@ func (e Exist) FilterPallet(list []subscan.NetworkPallet) []subscan.NetworkPalle
 		if len(pallet) == 0 {
 			continue
 		}
-		item.Pallet = pallet
+		item.Data = pallet
 		result = append(result, item)
 	}
 	return result

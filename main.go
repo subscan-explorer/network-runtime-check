@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/subscan-explorer/network-runtime-check/cmd/pallet"
+	"github.com/subscan-explorer/network-runtime-check/cmd/rule"
 	"github.com/subscan-explorer/network-runtime-check/conf"
 )
 
@@ -25,7 +26,7 @@ func main() {
 		conf.InitConf(cmd.Context(), cmd.Flag("config").Value.String())
 	}
 
-	rootCmd.AddCommand(pallet.NewPalletCmd())
+	rootCmd.AddCommand(pallet.NewPalletCmd(), rule.NewParamCmd())
 	rootCmd.SetContext(ctx)
 	_ = rootCmd.Execute()
 	cancel()

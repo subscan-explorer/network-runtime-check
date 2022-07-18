@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/bndr/gotabulate"
-	"github.com/subscan-explorer/network-runtime-check/internal/api/subscan"
+	"github.com/subscan-explorer/network-runtime-check/conf"
+	"github.com/subscan-explorer/network-runtime-check/internal/model"
 )
 
 type FileOutput struct {
@@ -17,7 +18,7 @@ func NewFileOutput(path string) *FileOutput {
 	return &FileOutput{path: path}
 }
 
-func (f FileOutput) FormatCompareChart(pallet []string, list []subscan.NetworkPallet) error {
+func (f FileOutput) FormatCompareChart(pallet []string, list []model.NetworkData[string]) error {
 	var fd, err = os.Create(f.path)
 	if err != nil {
 		return err
@@ -39,7 +40,7 @@ func (f FileOutput) FormatCompareChart(pallet []string, list []subscan.NetworkPa
 		}
 		i++
 		network = append(network, np.Network)
-		for _, p := range np.Pallet {
+		for _, p := range np.Data {
 			if idx, ok := palletIdx[strings.ToLower(p)]; ok {
 				table[idx][i] = Exist
 			}
@@ -54,15 +55,15 @@ func (f FileOutput) FormatCompareChart(pallet []string, list []subscan.NetworkPa
 		return nil
 	}
 
-	if data := f.formatChartErrData(list); len(data) != 0 {
-		_, _ = fd.WriteString("Error list:")
+	if data := formatChartErrData(list); len(data) != 0 {
+		_, _ = fd.WriteString("Error list:\n")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Error reason"})
 		tb.SetAlign("left")
 		_, _ = fd.WriteString(tb.Render("grid"))
 	}
 	_, _ = fd.Write([]byte{'\n'})
-	_, _ = fd.WriteString("Result list:")
+	_, _ = fd.WriteString("Result list:\n")
 	tb := gotabulate.Create(table)
 	tb.SetHeaders(network)
 	tb.SetAlign("center")
@@ -70,14 +71,14 @@ func (f FileOutput) FormatCompareChart(pallet []string, list []subscan.NetworkPa
 	return fd.Sync()
 }
 
-func (f FileOutput) FormatChart(list []subscan.NetworkPallet) error {
+func (f FileOutput) FormatChart(list []model.NetworkData[string]) error {
 	var fd, err = os.Create(f.path)
 	if err != nil {
 		return err
 	}
 	defer fd.Close()
-	if data := f.formatChartErrData(list); len(data) != 0 {
-		_, _ = fd.WriteString("Error list:")
+	if data := formatChartErrData(list); len(data) != 0 {
+		_, _ = fd.WriteString("Error list:\n")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Error reason"})
 		tb.SetAlign("left")
@@ -86,11 +87,47 @@ func (f FileOutput) FormatChart(list []subscan.NetworkPallet) error {
 	_, _ = fd.Write([]byte{'\n'})
 	const maxWidth = 180
 	if data := f.formatChartData(list, maxWidth); len(data) != 0 {
-		_, _ = fd.WriteString("Result list:")
+		_, _ = fd.WriteString("Result list:\n")
 		tb := gotabulate.Create(data)
 		tb.SetHeaders([]string{"Network", "Pallet"})
 		tb.SetWrapStrings(true)
 		tb.SetMaxCellSize(maxWidth)
+		tb.SetAlign("left")
+		_, _ = fd.WriteString(tb.Render("grid"))
+	}
+	return fd.Sync()
+}
+
+func (f FileOutput) FormatEventChart(list []model.NetworkData[model.Metadata], c []conf.NetworkRule) error {
+	var fd, err = os.Create(f.path)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	if data := formatChartErrData(list); len(data) != 0 {
+		_, _ = fd.WriteString("Error list:\n")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Error reason"})
+		tb.SetAlign("left")
+		_, _ = fd.WriteString(tb.Render("grid"))
+	}
+	_, _ = fd.Write([]byte{'\n'})
+
+	if data := f.formatEventChartData(c, list); len(data) != 0 {
+		_, _ = fd.WriteString("Event list:\n")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Pallet", "Event", "Check", "Note"})
+		tb.SetAlign("left")
+		_, _ = fd.WriteString(tb.Render("grid"))
+	}
+
+	_, _ = fd.Write([]byte{'\n'})
+
+	if data := f.formatExtrinsicChartData(c, list); len(data) != 0 {
+		_, _ = fd.WriteString("Extrinsic list:\n")
+		tb := gotabulate.Create(data)
+		tb.SetHeaders([]string{"Network", "Pallet", "Extrinsic", "Check", "Note"})
 		tb.SetAlign("left")
 		_, _ = fd.WriteString(tb.Render("grid"))
 	}

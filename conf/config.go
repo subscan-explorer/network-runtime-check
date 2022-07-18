@@ -21,7 +21,6 @@ func InitConf(ctx context.Context, path string) {
 	if err != nil {
 		if data, err = self.GetConfigData(ctx); err != nil {
 			log.Fatalln("failed to open configuration file.")
-			return
 		}
 	}
 	if err = yaml.Unmarshal(data, &Conf); err != nil {

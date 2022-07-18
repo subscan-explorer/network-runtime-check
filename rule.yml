@@ -1,0 +1,80 @@
+rule:
+  - name: common
+    pallet:
+      - name: Balances
+        event:
+          - name: Transfer
+            param: [ AccountId,AccountId,Balance ]
+        extrinsic:
+          - name: Transfer
+            param: [ Address, Balance ]
+      - name: System
+        event:
+          - name: ExtrinsicSuccess
+            param: [ DispatchInfo ]
+          - name: ExtrinsicFailed
+            param: [ DispatchError,DispatchInfo ]
+
+  - name: system_balances
+    pallet:
+      - name: System
+        event:
+          - name: Remarked
+            param: [ AccountId,Hash ]
+          - name: NewAccount
+            param: [ AccountId ]
+        extrinsic:
+          - name: kill_storage
+            param: [ Vec<Key> ]
+      - name: Balances
+        event:
+          - name: BalanceSet
+            param: [ AccountId,Balance,Balance ]
+          - name: Endowed
+            param: [ AccountId,Balance ]
+  - name: pmk
+    pallet:
+      - name: PredictionMarkets
+        event:
+          - name: MarketDisputed
+            param: [ "MarketIdOf","MarketStatus","MarketDispute<AccountId, BlockNumber>" ]
+          - name: MarketRejected
+            param: [ MarketIdOf ]
+        extrinsic:
+          - name: buy_complete_set
+            param: [ MarketIdOf,BalanceOf ]
+      - name: ParachainSystem
+        event:
+          - name: DownwardMessagesProcessed
+            param: [ Weight,relay_chain::Hash ]
+
+network:
+  - name: polkadot
+    domain: polkadot
+    wsAddr: wss://rpc.polkadot.io/
+    rule_inherit: [ common,system_balances,pmk ]
+    pallet:
+      - name: Treasury
+        event:
+          - name: Deposit
+            param: [ BalanceOf ]
+        extrinsic:
+          - name: Awarded
+            param: [ ProposalIndex, BalanceOf, AccountId ]
+
+  - name: khala
+    domain: khala
+    pallet:
+      - name: Balances
+        event:
+          - name: Transfer
+            param: [ AccountId,AccountId,Balance ]
+      - name: System
+        event:
+          - name: ExtrinsicSuccess
+            param: [ DispatchInfo ]
+          - name: ExtrinsicFailed
+            param: [ DispatchError,DispatchInfo ]
+  - name: zeitgeist
+    domain: zeitgeist
+    rule_inherit: [ common,system_balances,pmk ]
