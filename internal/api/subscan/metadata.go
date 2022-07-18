@@ -1,7 +1,6 @@
 package subscan
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -87,7 +86,7 @@ func metadata(ctx context.Context, network string, spec int) ([]model.Metadata, 
 	param.Spec = spec
 	reqBody, _ := json.Marshal(param)
 
-	if rspData, err = sendRequest[Info](ctx, metadataURL, bytes.NewBuffer(reqBody)); err != nil {
+	if rspData, err = sendRequest[Info](ctx, metadataURL, reqBody); err != nil {
 		return nil, err
 	}
 	return rspData.Data.Info.Metadata, nil

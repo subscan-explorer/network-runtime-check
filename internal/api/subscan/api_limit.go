@@ -1,6 +1,7 @@
 package subscan
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -61,7 +62,7 @@ func APILimit(ctx context.Context) (int, error) {
 	return rateLimit, nil
 }
 
-func sendRequest[T any](ctx context.Context, host string, reqBody io.Reader) (*Resp[T], error) {
+func sendRequest[T any](ctx context.Context, host string, reqBody []byte) (*Resp[T], error) {
 	var (
 		req        *http.Request
 		rsp        *http.Response
@@ -69,14 +70,15 @@ func sendRequest[T any](ctx context.Context, host string, reqBody io.Reader) (*R
 		retryCount = 3
 		err        error
 	)
-	if req, err = http.NewRequestWithContext(ctx, http.MethodPost, host, reqBody); err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	if conf.Conf.APIKey != "" {
-		req.Header.Set("X-API-Key", conf.Conf.APIKey)
-	}
 	sendReq := func() (bool, time.Duration, error) {
+		if req, err = http.NewRequestWithContext(ctx, http.MethodPost, host, bytes.NewBuffer(reqBody)); err != nil {
+			return false, 0, err
+		}
+		req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+		if conf.Conf.APIKey != "" {
+			req.Header.Set("X-API-Key", conf.Conf.APIKey)
+		}
+
 		if rsp, err = api.HTTPCli.Do(req); err != nil {
 			return true, 0, err
 		}

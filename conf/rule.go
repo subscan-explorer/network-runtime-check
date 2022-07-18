@@ -73,7 +73,6 @@ func LoadRule(path string) Rule {
 		if len(rule.Network[i].RuleInherit) > 0 {
 			rule.Network[i].Pallet = mergeRule(rule.Network[i].Pallet, ruleMap, rule.Network[i].RuleInherit)
 		}
-		log.Printf("%+v\n", rule.Network[i])
 	}
 	return rule
 }
