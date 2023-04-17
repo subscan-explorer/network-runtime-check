@@ -9,19 +9,17 @@ network:
   - alephzero
   - astar
   - altair
+  - bifrost-kusama
   - bifrost
   - calamari
   - centrifuge
-  - chainx
   - clover
   - clv
   - clover-testnet
   - composable
-  - crab-parachain
   - crust
-  - maxwell
+  - crust-parachain
   - shadow
-  - dali
   - crab
   - dbc
   - dock
@@ -33,17 +31,14 @@ network:
   - interlay
   - karura
   - kintsugi
-  - kulupu
   - khala
   - kilt-testnet
   - spiritnet
-  - litmus
   - moonbase
   - moonbeam
   - moonriver
   - nodle
   - pangolin
-  - pangolin-parachain
   - pangoro
   - parallel
   - parallel-heiko
@@ -67,3 +62,6 @@ network:
   - uniarts
   - westend
   - zeitgeist
+  - unique
+  - datahighway
+  - subspace
