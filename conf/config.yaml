@@ -24,9 +24,6 @@ network:
   - dbc
   - dock
   - dolphin
-  - edgeware
-  - encointer
-  - equilibrium
   - integritee
   - interlay
   - karura
@@ -48,20 +45,29 @@ network:
   - polymesh
   - polymesh-testnet
   - quartz
-  - reef
   - rococo
   - sakura
   - shibuya
   - shiden
   - sora
-  - subgame
   - stafi
-  - statemine
-  - statemint
   - turing
-  - uniarts
   - westend
   - zeitgeist
   - unique
-  - datahighway
   - subspace
+  - manta
+  - assethub-polkadot
+  - assethub-kusama
+  - assethub-rococo
+  - krest
+  - agung-testnet
+  - polkadex-parachain
+  - joystream
+  - canary-matrix
+  - matrix
+  - enjin
+  - canary
+  - tanssi-testnet
+  - creditcoin-testnet
+  - creditcoin
