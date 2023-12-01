@@ -3,60 +3,81 @@ apikey:
 network:
   - polkadot
   - kusama
-  - darwinia
-  - acala
-  - acala-testnet
-  - alephzero
-  - astar
-  - altair
-  - bifrost-kusama
-  - bifrost
-  - calamari
-  - centrifuge
-  - clover
-  - clv
-  - clover-testnet
-  - composable
-  - crust
-  - crust-parachain
-  - shadow
-  - crab
-  - dbc
-  - dock
-  - dolphin
-  - integritee
-  - interlay
-  - karura
-  - kintsugi
-  - khala
-  - kilt-testnet
-  - spiritnet
-  - moonbase
   - moonbeam
   - moonriver
-  - nodle
-  - pangolin
-  - pangoro
-  - parallel
-  - parallel-heiko
-  - picasso
-  - pioneer
-  - polkadex
-  - polymesh
-  - polymesh-testnet
-  - quartz
-  - rococo
-  - sakura
-  - shibuya
-  - shiden
-  - sora
+  - phala
+  - crab
+  - crust
+  - darwinia
+  - centrifuge
   - stafi
-  - turing
+  - dock
+  - dock-poa
+  - dbc
+  - karura
   - westend
+  - moonbase
+  - clover
+  - clover-testnet
+  - kilt-testnet
+  - sora
+  - khala
+  - crust-parachain
+  - bifrost
+  - shiden
+  - shibuya
+  - sakura
+  - robonomics
+  - spiritnet
+  - calamari
+  - polymesh-testnet
+  - polymesh
+  - polkadex
+  - integritee
+  - parallel-heiko
+  - dolphin
+  - acala-testnet
+  - astar
+  - acala
+  - parallel
+  - clv
+  - quartz
+  - kintsugi
+  - shadow
+  - alephzero
+  - altair
+  - picasso
+  - rococo
+  - pioneer
+  - centrifuge-parachain
+  - nodle
+  - interlay
   - zeitgeist
+  - mangatax
+  - dali
+  - composable
+  - turing
+  - bifrost-kusama
+  - efinity
   - unique
+  - basilisk
+  - hydradx
+  - datahighway
+  - equilibrium-beta
   - subspace
+  - origintrail-testnet
+  - origintrail
+  - bajun
+  - pangolin
+  - humanode
   - manta
+  - picasso-rococo
+  - centrifuge-standalone-history
+  - efinity-parachain-archive
+  - vara
+  - rockmine
+  - statemine
+  - statemint
   - assethub-polkadot
   - assethub-kusama
   - assethub-rococo
@@ -68,6 +89,6 @@ network:
   - matrix
   - enjin
   - canary
-  - tanssi-testnet
+  - dancebox
   - creditcoin-testnet
   - creditcoin
